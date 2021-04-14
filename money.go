@@ -207,3 +207,7 @@ func microsToFloat(micros int64) float64 {
 func ToStringDollars(l *pb.Money) string {
 	return fmt.Sprintf("%d.%d", l.GetUnits(), l.GetNanos())
 }
+
+func ToInt(l *pb.Money) int64 {
+	return unitsAndNanoPartToMicros(l.GetUnits(), l.GetNanos())
+}
