@@ -134,8 +134,6 @@ func DivideInt(m *pb.Money, n uint32) *pb.Money {
 func MultipleFast(l, r *pb.Money) *pb.Money {
 	lr := unitsAndNanoPartToMicros(l.Units, l.Nanos)
 	rr := unitsAndNanoPartToMicros(r.Units, r.Nanos)
-	fmt.Println(l.Units, l.Nanos)
-	fmt.Println(r.Units, r.Nanos)
 	ln := lr * rr
 	return toGoogleMoney(ln, l.CurrencyCode)
 }
@@ -173,16 +171,25 @@ func unitsAndMicroPartToMicros(units int64, micros int64) int64 {
 	return unitsToMicros(units) + micros
 }
 
-func unitsAndNanoPartToMicros(units int64, nanos int32) int64 {
-	return unitsToMicros(units) + int64(nanos/1000)
-}
+//func unitsAndNanoPartToMicros(units int64, nanos int32) int64 {
+//	return unitsToMicros(units) + int64(nanos/1000)
+//}
 
 func microsToUnitsAndMicroPart(micros int64) (int64, int64) {
 	return micros / 1000000, micros % 1000000
 }
 
+// edited
+func unitsAndNanoPartToMicros(units int64, nanos int32) int64 {
+	return (units*100 + int64(nanos/10000000))
+}
+
+//func microsToUnitsAndNanoPart(micros int64) (int64, int32) {
+//	return micros / 1000000, int32(micros%1000000) * 1000
+//}
+// edited
 func microsToUnitsAndNanoPart(micros int64) (int64, int32) {
-	return micros / 1000000, int32(micros%1000000) * 1000
+	return micros / 10000, int32(micros%10000) * 100000
 }
 
 func unitsToMicros(units int64) int64 {
@@ -195,4 +202,8 @@ func floatUnitsToMicros(floatUnits float64) int64 {
 
 func microsToFloat(micros int64) float64 {
 	return float64(micros) / 1000000.0
+}
+
+func ToStringDollars(l *pb.Money) string {
+	return fmt.Sprintf("%d.%d", l.GetUnits(), l.GetNanos())
 }
