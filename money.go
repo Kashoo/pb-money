@@ -215,7 +215,7 @@ func ToStringDollars(l *pb.Money) string {
 	} else if len(nanos) == 1 {
 		nanos = nanos + "0"
 	}
-	return fmt.Sprintf("%d.%d", l.GetUnits(), nanos)
+	return fmt.Sprintf("%d.%s", l.GetUnits(), nanos)
 }
 
 func ToInt(l *pb.Money) int64 {
