@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	pb "google.golang.org/genproto/googleapis/type/money"
+	"strconv"
+	"strings"
 )
 
 const (
@@ -205,7 +207,15 @@ func microsToFloat(micros int64) float64 {
 }
 
 func ToStringDollars(l *pb.Money) string {
-	return fmt.Sprintf("%d.%d", l.GetUnits(), l.GetNanos())
+
+	nanos := strconv.Itoa(int(l.GetNanos()))
+	nanos = strings.TrimRight(nanos, "0")
+	if nanos == "" {
+		nanos = "00"
+	} else if len(nanos) == 1 {
+		nanos = nanos + "0"
+	}
+	return fmt.Sprintf("%d.%d", l.GetUnits(), nanos)
 }
 
 func ToInt(l *pb.Money) int64 {
