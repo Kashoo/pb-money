@@ -1,4 +1,4 @@
-module pb-money
+module github.com/Kashoo/pb-money
 
 go 1.16
 
