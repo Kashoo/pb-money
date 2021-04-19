@@ -9,9 +9,10 @@ import (
 )
 
 const (
-	nanosMin = -999999999
-	nanosMax = +999999999
-	nanosMod = 1000000000
+	nanosMin      = -999999999
+	nanosMax      = +999999999
+	nanosMod      = 1000000000
+	microNanosMod = 100000
 )
 
 var (
@@ -73,6 +74,7 @@ func Negate(m *pb.Money) *pb.Money {
 // functions like: "m := Must(Sum(a,b))".
 func Must(v *pb.Money, err error) *pb.Money {
 	if err != nil {
+		fmt.Printf("error with must %s", err.Error())
 		panic(err)
 	}
 	return v
@@ -90,7 +92,7 @@ func Sum(l, r *pb.Money) (*pb.Money, error) {
 	units := l.GetUnits() + r.GetUnits()
 	nanos := l.GetNanos() + r.GetNanos()
 
-	if (units == 0 && nanos == 0) || (units > 0 && nanos >= 0) || (units < 0 && nanos <= 0) {
+	if (units == 0 && nanos == 0) || (units >= 0 && nanos >= 0) || (units < 0 && nanos <= 0) {
 		// same sign <units, nanos>
 		units += int64(nanos / nanosMod)
 		nanos = nanos % nanosMod
@@ -136,29 +138,37 @@ func DivideInt(m *pb.Money, n uint32) *pb.Money {
 func MultipleFast(l, r *pb.Money) *pb.Money {
 	lr := unitsAndNanoPartToMicros(l.Units, l.Nanos)
 	rr := unitsAndNanoPartToMicros(r.Units, r.Nanos)
-	ln := lr * rr
-	return toGoogleMoney(ln, l.CurrencyCode)
+	ln := (lr * rr) / 10
+
+	return &pb.Money{
+		CurrencyCode: l.GetCurrencyCode(),
+		Units:        ln / nanosMod,
+		Nanos:        int32(ln % nanosMod),
+	}
 }
 
 func DivideFast(l, r *pb.Money) *pb.Money {
 	lr := unitsAndNanoPartToMicros(l.Units, l.Nanos)
 	rr := unitsAndNanoPartToMicros(r.Units, r.Nanos)
 
-	ln := lr / rr
-	return toGoogleMoney(ln, l.CurrencyCode)
+	ln := (lr / rr)
+	rem := lr % rr
+	return &pb.Money{Units: ln, Nanos: int32(rem) * 100, CurrencyCode: l.GetCurrencyCode()}
 }
 
-func DivideFastInt(l *pb.Money, r int64) *pb.Money {
-	lr := unitsAndNanoPartToMicros(l.Units, l.Nanos)
-
-	ln := lr / r
-	return toGoogleMoney(ln, l.CurrencyCode)
-}
-func MultipleFastInt(l *pb.Money, r int64) *pb.Money {
-	lr := unitsAndNanoPartToMicros(l.Units, l.Nanos)
-	ln := lr * r
-	return toGoogleMoney(ln, l.CurrencyCode)
-}
+//func DivideFastInt(l *pb.Money, r int64) *pb.Money {
+//	lr := unitsAndNanoPartToMicros(l.Units, l.Nanos)
+//	fmt.Println(l.Units, l.Nanos)
+//	ln := (lr) / r
+//	//ln2 := (lr) / r
+//
+//	return toGoogleMoney(ln, l.GetCurrencyCode())
+//}
+//func MultipleFastInt(l *pb.Money, r int64) *pb.Money {
+//	lr := unitsAndNanoPartToMicros(l.Units, l.Nanos)
+//	ln := lr * r
+//	return toGoogleMoney(ln, l.CurrencyCode)
+//}
 
 func toGoogleMoney(valueMicros int64, currencyCode string) *pb.Money {
 	units, nanoPart := microsToUnitsAndNanoPart(valueMicros)
@@ -169,41 +179,17 @@ func toGoogleMoney(valueMicros int64, currencyCode string) *pb.Money {
 	}
 }
 
-func unitsAndMicroPartToMicros(units int64, micros int64) int64 {
-	return unitsToMicros(units) + micros
-}
-
-//func unitsAndNanoPartToMicros(units int64, nanos int32) int64 {
-//	return unitsToMicros(units) + int64(nanos/1000)
-//}
-
-func microsToUnitsAndMicroPart(micros int64) (int64, int64) {
-	return micros / 1000000, micros % 1000000
-}
-
-// edited
 func unitsAndNanoPartToMicros(units int64, nanos int32) int64 {
-	return (units*100 + int64(nanos/10000000))
+	return units*microNanosMod + int64(nanos/10000)
 }
 
-//func microsToUnitsAndNanoPart(micros int64) (int64, int32) {
-//	return micros / 1000000, int32(micros%1000000) * 1000
-//}
-// edited
 func microsToUnitsAndNanoPart(micros int64) (int64, int32) {
-	return micros / 10000, int32(micros%10000) * 100000
+
+	return micros / microNanosMod, int32(micros%microNanosMod) * microNanosMod
 }
 
 func unitsToMicros(units int64) int64 {
 	return units * 1000000
-}
-
-func floatUnitsToMicros(floatUnits float64) int64 {
-	return int64(floatUnits * 1000000.0)
-}
-
-func microsToFloat(micros int64) float64 {
-	return float64(micros) / 1000000.0
 }
 
 func ToStringDollars(l *pb.Money) string {
